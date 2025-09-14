@@ -15,30 +15,39 @@ print(os.getcwd())
 
 #pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 # car object with attributes of vehicles in parking lot
-class car:
-    def __init__(self, lpn, entry, colour):
-        self.entry=entry
-        self.lpn=lpn
-        self.colour=colour
-current = 1
-csv_path = 'colors.csv'
-#path = "C:\\Users\\shant\\Documents\\Python Scripts\\car\\vehicle5.png"
+class Car:
+    lpn: str
+    entry: str
+    colour: Optional[str] = None
 
-# reading csv file
-index = ['color', 'color_name', 'hex', 'R', 'G', 'B']
-df = pd.read_csv(csv_path, names=index, header=None)
+class ColorDetector:
+    def __init__(self, csv_path: str):
+        self.df = pd.read_csv(csv_path, names=['color', 'color_name', 'hex', 'R', 'G', 'B'], header=None)
+        # Precompute color arrays for faster lookup
+        self.colors_array = self.df[['R', 'G', 'B']].values.astype(int)
+        self.color_names = self.df['color_name'].values
+    
+    def get_color_name(self, R: int, G: int, B: int) -> str:
+        """Get the closest color name using Manhattan distance"""
+        # Vectorized distance calculation
+        distances = np.abs(self.colors_array - [R, G, B]).sum(axis=1)
+        min_index = np.argmin(distances)
+        return self.color_names[min_index]
 
-
-#get colour name
-def get_color_name(R,G,B):
-	minimum = 1000
-	for i in range(len(df)):
-		d = abs(R - int(df.loc[i,'R'])) + abs(G - int(df.loc[i,'G'])) + abs(B - int(df.loc[i,'B']))
-		if d <= minimum:
-			minimum = d
-			cname = df.loc[i, 'color_name']
-
-	return cname
+# Usage example
+if __name__ == "__main__":
+    current = 1
+    csv_path = 'colors.csv'
+    
+    # Initialize color detector once
+    color_detector = ColorDetector(csv_path)
+    
+    # Example usage
+    car = Car(lpn="ABC123", entry="2023-01-01")
+    R, G, B = 255, 0, 0  # Example RGB values
+    car.colour = color_detector.get_color_name(R, G, B)
+    
+    print(f"Car color: {car.colour}")
 
 
 #get r,g,b value
